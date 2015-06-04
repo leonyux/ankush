@@ -413,6 +413,7 @@ public class ClusterPreValidator {
 	 *            the private key
 	 * @return true, if successful
 	 */
+	// 为什么要验证这个？
 	public Status checkRequiresTTY(SSHExec conn, String password) {
 		Result res = null;
 		// requires tty check by executing a sudo command

@@ -91,6 +91,7 @@ public class AgentDeployer extends AbstractDeployer {
 
 	private ClusterConfig clusterConfig;
 
+	//  主要是保存clusterConfig配置，并且设置日志logger
 	private void setClusterAndLogger(ClusterConfig clusterConfig) {
 		this.clusterConfig = clusterConfig;
 		this.agentHomeDir = clusterConfig.getComponents()
@@ -100,6 +101,7 @@ public class AgentDeployer extends AbstractDeployer {
 		logger.setCluster(clusterConfig);
 	}
 
+	// 保存clusterConfig配置，设置日志logger
 	@Override
 	public boolean createConfig(ClusterConfig clusterConfig) {
 		this.setClusterAndLogger(clusterConfig);
@@ -108,6 +110,7 @@ public class AgentDeployer extends AbstractDeployer {
 
 	@Override
 	public boolean validate(ClusterConfig clusterConfig) {
+		// 为何再次调用该函数，在createConfig中已调用过一次，两次调用之间该信息可能被更新？
 		this.setClusterAndLogger(clusterConfig);
 
 		// validate java on all nodes
@@ -123,6 +126,7 @@ public class AgentDeployer extends AbstractDeployer {
 				// acuiring the semaphore
 				semaphore.acquire();
 				// starting a thread to start pre-processing on node.
+				// 为每个节点启动一个线程执行validateJava函数
 				AppStoreWrapper.getExecutor().execute(new Runnable() {
 					@Override
 					public void run() {
@@ -152,10 +156,12 @@ public class AgentDeployer extends AbstractDeployer {
 				});
 			}
 			// waiting for all semaphores to finish the installation.
+			// 等待所有节点的验证完成
 			semaphore.acquire(clusterConfig.getNodes().size());
 			// getting the status on behalf of if status is false on a single
 			// node, final status will be false as JAVA needs to be same on all
 			// the nodes
+			// 检查是不是所有节点都通过了验证
 			status = getStatus(clusterConfig.getNodes());
 		} catch (Exception e) {
 			logger.error(e.getMessage(), this.getComponentName());
@@ -174,6 +180,7 @@ public class AgentDeployer extends AbstractDeployer {
 				nodeConfig.getHost());
 		try {
 			// if java is already installed
+			// 验证java是否已安装
 			if (javaConf.isRegister()) {
 				//check for java/bin existence at the user given Java Path and run jav --version command
 //				JavaValidator javaValidator = new JavaValidator(
@@ -189,6 +196,7 @@ public class AgentDeployer extends AbstractDeployer {
 //				}
 			} else {
 				// validate java bundle existence in Server Repo
+				// 验证java是否存在于server的库中
 				File f = new File(AppStoreWrapper.getServerRepoPath()
 						+ javaConf.getSource());
 				if (!f.exists()) {
@@ -210,6 +218,7 @@ public class AgentDeployer extends AbstractDeployer {
 					this.getComponentName(), nodeConfig.getHost(), e);
 			status = false;
 		}
+		// 根据最后的结果设置节点状态
 		nodeConfig.setStatus(status);
 	}
 
@@ -221,6 +230,7 @@ public class AgentDeployer extends AbstractDeployer {
 		return deployNodes(this.clusterConfig);
 	}
 
+	// 节点上部署agent
 	private boolean deployNodes(final ClusterConfig clusterConf) {
 		final Semaphore semaphore = new Semaphore(clusterConf.getNodes().size());
 
@@ -237,6 +247,7 @@ public class AgentDeployer extends AbstractDeployer {
 					public void run() {
 						try {
 							if (createAgentNode(nodeConfig)) {
+								// 启动Agent，以及在部署了ganglia的情况下启动jmxtrans
 								agentServiceManager.startAgent(clusterConfig,
 										nodeConfig);
 							} else {
@@ -264,7 +275,9 @@ public class AgentDeployer extends AbstractDeployer {
 				});
 			}
 			// waiting for all semaphores to finish the installation.
+			// 等待所有的节点上agent安装并启动结束
 			semaphore.acquire(clusterConf.getNodes().size());
+			// 只有所有节点状态成功，才会得到成功
 			return AnkushUtils.getStatus(clusterConf.getNodes());
 		} catch (Exception e) {
 			logger.error(e.getMessage(), Constant.Component.Name.AGENT, e);
@@ -272,7 +285,9 @@ public class AgentDeployer extends AbstractDeployer {
 		}
 	}
 
+	// 在节点上安装agent
 	private boolean createAgentNode(NodeConfig nodeConfig) {
+		// 获取agent配置的安装路径
 		String agentInstallDir = clusterConfig.getComponents()
 				.get(Constant.Component.Name.AGENT).getInstallPath();
 
@@ -285,6 +300,7 @@ public class AgentDeployer extends AbstractDeployer {
 				nodeConfig.getHost());
 
 		try {
+			// 获取ssh连接
 			connection = nodeConfig.getConnection();
 
 			if (connection == null) {
@@ -292,12 +308,14 @@ public class AgentDeployer extends AbstractDeployer {
 						ExceptionsMessage.CONNECTION_NULL_STRING);
 			}
 			/* Creating the Kill Process Command for AnkushAgent */
+			// 杀死已有的agent
 			CustomTask killProcess = new ExecCommand("sh " + this.agentHomeDir
 					+ AgentConstant.Relative_Path.STOP_SCRIPT);
 
 			// stopping already running agent
 			connection.exec(killProcess);
 			// backup old existing agent folder.
+			// 备份已有的agent目录
 			Move backUpAgent = new Move(agentHomeDir, agentHomeDir
 					+ "/../agentBackup");
 
@@ -307,6 +325,7 @@ public class AgentDeployer extends AbstractDeployer {
 			logger.debug("Create directory - " + agentHomeDir,
 					nodeConfig.getHost());
 			/* make installation directory if not exists */
+			// 创建 agent目录
 			AnkushTask mkInstallationPath = new MakeDirectory(agentHomeDir);
 
 			status = connection.exec(mkInstallationPath).isSuccess;
@@ -322,6 +341,7 @@ public class AgentDeployer extends AbstractDeployer {
 			// upload agent bundle from the server and Extract it
 			logger.info("Uploading Agent...", Constant.Component.Name.AGENT,
 					nodeConfig.getHost());
+			// 上传agent软件
 			status = uploadAndExtractAgent(nodeConfig, connection);
 
 			if (!status) {
@@ -333,6 +353,7 @@ public class AgentDeployer extends AbstractDeployer {
 					nodeConfig.getHost());
 
 			/* Updating agent.properties file */
+			// 更新agent.properties文件，即配置agent
 			status = updateAgentPropertyFile(connection, nodeConfig);
 
 			if (!status) {
@@ -351,6 +372,7 @@ public class AgentDeployer extends AbstractDeployer {
 			logger.info("Creating service dir in Agent...",
 					Constant.Component.Name.AGENT, nodeConfig.getHost());
 			// Creating make service dir command.
+			// 创建service配置目录
 			CustomTask mkDir = new MakeDirectory(this.agentHomeDir
 					+ AgentConstant.Relative_Path.SERVICE_CONF_DIR);
 			// Execute command.
@@ -359,6 +381,7 @@ public class AgentDeployer extends AbstractDeployer {
 				throw new AnkushException(
 						"Couldn't create service dir in Agent install dir.");
 			}
+			// 配置agent端jmxTrans，有什么作用？
 			status = configureJmxTrans(nodeConfig, connection, status);
 			if (!status) {
 				throw new AnkushException("Couldn't configure JMXTrans.");
@@ -370,6 +393,7 @@ public class AgentDeployer extends AbstractDeployer {
 				throw new AnkushException("Could not update agent cron file");
 			}
 			/* Setting status of the execution to the node status. */
+			// 上述成功完成后在nodeConfig中设置节点状态，此时应为true
 			nodeConfig.setStatus(status);
 
 		} catch (AnkushException e) {
@@ -387,8 +411,10 @@ public class AgentDeployer extends AbstractDeployer {
 	private boolean configureJmxTrans(NodeConfig nodeConfig,
 			SSHExec connection, boolean status) {
 		// configure JMXTrans only if Ganglia is availbale
+		// 当ganglia可用时才进行此配置
 		if (clusterConfig.getComponents().containsKey(
 				Constant.Component.Name.GANGLIA)) {
+			// 获取jmsTrans配置路径
 			String jmxTransInstallRelPath = ankushConf
 					.getStringValue("jmxtrans.installation.relative.path");
 			String jmxtransPath = agentHomeDir + jmxTransInstallRelPath;
@@ -409,11 +435,13 @@ public class AgentDeployer extends AbstractDeployer {
 				nodeConfig.getHost());
 
 		/* Uploading the jar files to node */
+		// 拷贝agent软件tar包至目标主机agent home目录下
 		connection.uploadSingleDataToServer(agentBundlePath, agentHomeDir);
 
 		// untar and remove task creation.
 		String tarFilePath = agentHomeDir + AgentDeployer.AGENT_BUNDLE_NAME;
 
+		// 解压并删除tar包文件
 		AnkushTask unTarTask = new Untar(tarFilePath, agentHomeDir, false);
 		AnkushTask removeTask = new Remove(tarFilePath);
 
@@ -428,6 +456,7 @@ public class AgentDeployer extends AbstractDeployer {
 		return status;
 	}
 
+	// 更新脚本和一些配置文件，加入agent安装路径信息
 	private boolean updateAgentScripts(String agentInstallDir,
 			SSHExec connection, boolean status) throws TaskExecFailException {
 		// map containing filePaths and agentInstallDir line
@@ -463,10 +492,13 @@ public class AgentDeployer extends AbstractDeployer {
 			String agentInstallDir, SSHExec connection, boolean status)
 			throws TaskExecFailException {
 		Map<String, String> updateCronConfMap = new LinkedHashMap<String, String>();
+		// 获取java bin目录路径
 		String javaBinDir = FileUtils
 				.getSeparatorTerminatedPathEntry(this.clusterConfig
 						.getJavaConf().getHomeDir())
 				+ "bin";
+		
+		// 设置一些变量key/value映射
 		updateCronConfMap.put(AgentDeployer.CRON_TARGET_TEXT_JAVA, javaBinDir);
 
 		updateCronConfMap.put(AgentDeployer.CRON_TARGET_TEXT_USERNAME,
@@ -474,9 +506,11 @@ public class AgentDeployer extends AbstractDeployer {
 		updateCronConfMap.put(AgentConstant.Key.INSTALL_DIR_ENV_VARIABLE_KEY,
 				agentInstallDir);
 
+		// 构造cron config路径
 		String filePathCronConf = agentHomeDir
 				+ AgentConstant.Relative_Path.CRON_CONF_FILE;
 
+		// 替换cron配置模板中的一些字段
 		for (String targetText : updateCronConfMap.keySet()) {
 			AnkushTask updateCronConf = new ReplaceText(targetText,
 					updateCronConfMap.get(targetText), filePathCronConf, false);
@@ -520,6 +554,7 @@ public class AgentDeployer extends AbstractDeployer {
 			// if app conf manager is not null.
 			if (appConfManager != null) {
 				// Getting app conf object.
+				// 获取agent ip配置
 				AppConf appConf = appConfManager.getByPropertyValueGuarded(
 						Constant.Keys.CONFKEY, Constant.Keys.SERVERIP);
 				// if app conf is null.
@@ -532,15 +567,18 @@ public class AgentDeployer extends AbstractDeployer {
 				// getting app conf object as map.
 				Map map = JsonMapperUtil.mapFromObject(appConf.getObject());
 				// if it contains the public ip.
+				// 获取公共ip
 				if (map.containsKey(Constant.Keys.PUBLICIP)) {
 					publicIp = (String) map.get(Constant.Keys.PUBLICIP);
 				}
 				// if it contains the port.
+				// 获取端口
 				if (map.containsKey(Constant.Keys.PORT)) {
 					publicPort = (String) map.get(Constant.Keys.PORT);
 				}
 			}
 
+			// 根据获取的ip和端口设置agentProps
 			if (publicIp != null && !publicIp.isEmpty()) {
 				agentProps.setProperty(Constant.Properties.Agent.SERVER_IP,
 						publicIp);
@@ -560,6 +598,7 @@ public class AgentDeployer extends AbstractDeployer {
 					nodeConfig.getHost());
 
 			// props file.
+			// 根据以上设置的属性生成agent配置文件
 			StringBuilder fileContent = new StringBuilder(
 					com.impetus.ankush2.constant.Constant.Strings.LINE_SEPERATOR);
 
@@ -573,6 +612,7 @@ public class AgentDeployer extends AbstractDeployer {
 			}
 
 			// Writing the agent.properties file on node
+			// 写入配置文件
 			CustomTask appendTask = new AppendFileUsingEcho(
 					fileContent.toString(), agentConfFile);
 			status = (connection.exec(appendTask).rc == 0);
@@ -583,6 +623,7 @@ public class AgentDeployer extends AbstractDeployer {
 		return status;
 	}
 
+	// jmxTrans是什么？
 	private boolean configureJmxTrans(SSHExec connection,
 			NodeConfig nodeConfig, String jmxtransInstallPath, String password) {
 		try {
@@ -597,6 +638,7 @@ public class AgentDeployer extends AbstractDeployer {
 
 			String replacementText = "\"" + jmxtransInstallPath + "\"";
 
+			// 将jmx.script.file.name配置项指定的文件中jmxtransInstallPath的内容替换成jmx.dir.targetText.log配置的内容
 			AnkushTask jmxTask = new ReplaceText(targetText_DirLog,
 					replacementText, filePath, false, password);
 			Result res = connection.exec(jmxTask);
@@ -605,6 +647,7 @@ public class AgentDeployer extends AbstractDeployer {
 						Constant.Component.Name.AGENT, nodeConfig.getHost());
 				return false;
 			}
+			// 为啥又替换一遍？
 			jmxTask = new ReplaceText(targetText_DirJson, replacementText,
 					filePath, false, password);
 			res = connection.exec(jmxTask);
@@ -613,6 +656,7 @@ public class AgentDeployer extends AbstractDeployer {
 						Constant.Component.Name.AGENT, nodeConfig.getHost());
 				return false;
 			}
+			// 再次替换jmx.dir.jarfile.name
 			replacementText = "\"" + jmxtransInstallPath
 					+ ankushConf.getStringValue("jmx.dir.jarfile.name") + "\"";
 			jmxTask = new ReplaceText(targetText_JarFile, replacementText,

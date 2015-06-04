@@ -845,6 +845,7 @@ public class GangliaDeployer extends AbstractDeployer {
 			List<String> depListCmds = FileUtils.readLines(new File(
 					installerFilePath));
 			// Iterating over the command lists.
+			// 一条一条迭代执行
 			for (String installCmd : depListCmds) {
 				if (!installCmd.isEmpty()) {
 					// Executing the installation command.

@@ -113,6 +113,7 @@ public class AnkushLogger {
 	 * @param clusterConf
 	 *            the new cluster
 	 */
+	// 根据id情况设置日志模式
 	public void setCluster(ClusterConfig clusterConf) {
 		setClusterName(clusterConf.getName());
 		this.clusterId = clusterConf.getClusterId();

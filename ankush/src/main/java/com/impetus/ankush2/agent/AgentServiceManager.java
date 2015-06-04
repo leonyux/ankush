@@ -145,6 +145,7 @@ public class AgentServiceManager implements Serviceable {
 		}
 	}
 
+	// 启动节点上的agent
 	public boolean startAgent(ClusterConfig clusterConfig, NodeConfig nodeConfig)
 			throws AnkushException {
 		boolean status = false;
@@ -152,12 +153,14 @@ public class AgentServiceManager implements Serviceable {
 			System.out.println("clusterConfig.getInstallationType() : "
 					+ clusterConfig.getInstallationType());
 			// Add Agent Cron entry foe Sudo only
+			// 如果安装方式是sudo
 			if (clusterConfig.getInstallationType() == Constant.Cluster.InstallationType.SUDO) {
 				// Copying cron file
 				String filePathCronConf = clusterConfig.getAgentHomeDir()
 						+ AgentConstant.Relative_Path.CRON_CONF_FILE;
 				String destinationCronConfPath = AgentConstant.Strings.ETC_PATH_AGENT_CRON_CONF;
 
+				// 将cron文件拷贝到/etc/cron.d，以sudo权限执行
 				AnkushTask copyCronConf = new Copy(filePathCronConf,
 						destinationCronConfPath);
 				AnkushTask execSudo = new ExecSudoCommand(clusterConfig
@@ -172,6 +175,7 @@ public class AgentServiceManager implements Serviceable {
 			}
 
 			// Agent start script command
+			// 执行start-agent.sh脚本
 			String startAgent = "sh " + clusterConfig.getAgentHomeDir()
 					+ AgentConstant.Relative_Path.START_SCRIPT;
 			CustomTask task = new ExecCommand(startAgent);
@@ -181,6 +185,7 @@ public class AgentServiceManager implements Serviceable {
 			}
 
 			// Starting jmxtrans
+			// 启动jmxtrans，做什么用的？
 			return startJmxTrans(clusterConfig, nodeConfig);
 		} catch (AnkushException e) {
 			throw e;
@@ -230,6 +235,7 @@ public class AgentServiceManager implements Serviceable {
 		boolean status = false;
 		try {
 			// Validating jmxtrans jar
+			// 查看jmxtrans是否已经正在运行，如果是，停止
 			String validateJmxtransCmd = "jps | grep ankush-jmxtrans-all.jar";
 			CustomTask task = new ExecCommand(validateJmxtransCmd);
 			if (nodeConfig.getConnection().exec(task).rc == 0) {
@@ -238,6 +244,7 @@ public class AgentServiceManager implements Serviceable {
 						nodeConfig.getConnection(), nodeConfig.getHost());
 			}
 			// starting jmxTrans
+			// 启动jmxtrans
 			status = startJmxTrans(clusterConfig, nodeConfig.getConnection(),
 					nodeConfig.getHost());
 		} catch (AnkushException e) {
@@ -404,6 +411,7 @@ public class AgentServiceManager implements Serviceable {
 	public boolean startJmxTrans(ClusterConfig clusterConfig,
 			SSHExec connection, String host) throws AnkushException {
 		// Skipping to start JMXTrans,if Cluster doesn't contain Ganglia
+		// 如果集群中没有部署ganglia则不启动Jmxtrans
 		if (!clusterConfig.getComponents().containsKey(
 				Constant.Component.Name.GANGLIA)) {
 			return true;
@@ -419,6 +427,7 @@ public class AgentServiceManager implements Serviceable {
 
 			ComponentConfig gangliaConfig = getGangliaConfig(clusterConfig);
 
+			// jmxtrans启动选项中配置GANGLIA_MASTER_IP
 			replacementText_JmxOpts = replacementText_JmxOpts
 					.replaceAll(
 							this.ankushConf
@@ -426,6 +435,7 @@ public class AgentServiceManager implements Serviceable {
 							gangliaConfig
 									.getAdvanceConfStringProperty(GangliaConstants.ClusterProperties.GMETAD_HOST));
 
+			// 获取配置的gangliaport
 			int gangliaPort;
 			try {
 				gangliaPort = gangliaConfig
@@ -435,24 +445,28 @@ public class AgentServiceManager implements Serviceable {
 						.getIntValue("ganglia.port");
 			}
 
+			//  jmxtrans启动选项中配置GANGLIA_PORT
 			replacementText_JmxOpts = replacementText_JmxOpts
 					.replaceAll(
 							this.ankushConf
 									.getStringValue("jmxtrans.script.template.gangliaport"),
 							String.valueOf(gangliaPort));
 
+			// 用host配置HOST_PRIVATE_IP
 			replacementText_JmxOpts = replacementText_JmxOpts
 					.replaceAll(
 							this.ankushConf
 									.getStringValue("jmxtrans.script.template.privateip"),
 							host);
 
+			// 以及SERVER_ALIAS
 			replacementText_JmxOpts = replacementText_JmxOpts
 					.replaceAll(
 							this.ankushConf
 									.getStringValue("jmxtrans.script.template.serveralias"),
 							host);
 
+			// 替换jmxtrans启动脚本中的JMXTRANS_OPTS
 			final AnkushTask jmxTask = new ReplaceText(targetText_JmxOpts,
 					replacementText_JmxOpts, jmxTransScriptFilePath, false,
 					null);
@@ -462,6 +476,7 @@ public class AgentServiceManager implements Serviceable {
 
 			// Password is set to NULL to run the script command without sudo
 			// option
+			// 执行jmxtrans启动脚本
 			final String command = JmxMonitoringUtil.getJmxTransCommand(
 					jmxTransScriptFilePath, null,
 					Constant.JmxTransServiceAction.START);
@@ -485,6 +500,7 @@ public class AgentServiceManager implements Serviceable {
 					getJmxTransScriptFilePath(clusterConfig), null,
 					Constant.JmxTransServiceAction.STOP);
 
+			// 后台运行，如果已经运行了jmxtrans，则停止运行
 			final AnkushTask task = new RunInBackground(command);
 			if (!connection.exec(task).isSuccess) {
 				logger.warn(
@@ -498,6 +514,7 @@ public class AgentServiceManager implements Serviceable {
 		return true;
 	}
 
+	// 返回jmxtrans启动脚本路径
 	private String getJmxTransScriptFilePath(ClusterConfig clusterConfig)
 			throws AnkushException {
 		try {
@@ -518,10 +535,12 @@ public class AgentServiceManager implements Serviceable {
 		String errMsg = "Could not get " + Constant.Component.Name.GANGLIA
 				+ " details for starting JmxTrans.";
 		try {
+			// 如果集群组件中不包含ganglia，抛出异常
 			if (!clusterConfig.getComponents().containsKey(
 					Constant.Component.Name.GANGLIA)) {
 				throw new AnkushException(errMsg);
 			}
+			// 返回gangliaConfig对象
 			return clusterConfig.getComponents().get(
 					Constant.Component.Name.GANGLIA);
 		} catch (AnkushException e) {

@@ -100,6 +100,7 @@ public class ClusterManager {
 		Iterator<Deployable> iterator = deployQueue.iterator();
 
 		// Create configuration
+		// 为要部署的component根据clusterconf构造配置
 		while (iterator.hasNext()) {
 			iterator.next().createConfig(clusterConf);
 		}
@@ -151,6 +152,7 @@ public class ClusterManager {
 	// }
 
 	// Validate component inputs
+	// 验证组件，主要调用deployer的validate函数
 	private boolean validateComponents(ClusterConfig newClusterConf) {
 		logger.info("Validating components...");
 		Iterator<Deployable> iterator = deployQueue.iterator();
@@ -174,10 +176,12 @@ public class ClusterManager {
 
 	private void postProcess() {
 		// Disconnect ssh connections
+		// 关闭到各节点的ssh连接
 		AnkushUtils.disconnectNodes(clusterConf, clusterConf.getNodes()
 				.values());
 		// Set NodeConfig state to ERROR/DEPLOYED depending upon errors object
 		// of NodeCOnfig.
+		// 更新操作后各节点的状态
 		for (NodeConfig nodeConf : clusterConf.getNodes().values()) {
 			if (nodeConf.getErrors().size() > 0) {
 				nodeConf.setState(Constant.Node.State.ERROR);
@@ -187,11 +191,14 @@ public class ClusterManager {
 		}
 
 		// handle error condition
+		// 更新操作信息
 		new DatabaseUtils().updateClusterOperation(clusterConf);
 		// update database
+		// 保存集群和节点信息
 		new DatabaseUtils().saveCluster(clusterConf);
 	}
 
+	// 部署组建，根据是否部署还是注册，是否为Agent有操作区别
 	private boolean deploy(Deployable deployer) {
 
 		if (clusterConf.getComponents()
@@ -234,17 +241,20 @@ public class ClusterManager {
 
 		try {
 			// Create priority queue
+			// 构造部署优先级队列，根据clusterconf建立节点ssh连接，获取组件部署deployer，加入优先级队列
 			if (!createQueue(clusterConf)) {
 				clusterConf.setState(Constant.Cluster.State.ERROR);
 				return;
 			}
 
 			// create configuration from registering details
+			// 为需要部署的component的deployer对象调用createConf函数构造配置
 			if (!createConfiguration()) {
 				logger.error("Creating component configuration failed.");
 				clusterConf.setState(Constant.Cluster.State.ERROR);
 				return;
 			}
+			// 断开ssh连接
 			AnkushUtils.disconnectNodes(clusterConf, clusterConf.getNodes()
 					.values());
 			// validate cluster Json
@@ -256,6 +266,7 @@ public class ClusterManager {
 
 			// TODO:License validation
 			// database validation
+			// 对集群配置进行数据库验证
 			errors = new DatabaseUtils().validateCluster(clusterConf, true);
 
 			if (!errors.isEmpty()) {
@@ -265,6 +276,7 @@ public class ClusterManager {
 			}
 
 			// Save cluster details
+			// 保存集群信息
 			String error = new DatabaseUtils().saveCluster(clusterConf);
 
 			if (error != null) {
@@ -273,14 +285,17 @@ public class ClusterManager {
 			}
 
 			// Add services into database
+			// 保存节点上的服务配置信息
 			DBServiceManager.getManager().addClusterServices(clusterConf,
 					clusterConf.getNodes().values());
 
 			// Create ssh connections for newly added nodes
+			// 为新增的节点建立ssh连接
 			AnkushUtils.connectNodes(clusterConf, clusterConf.getNodes()
 					.values());
 
 			// validate components
+			// 验证组件，主要调用deployer的validate函数
 			if (!validateComponents(null)) {
 				clusterConf.setState(Constant.Cluster.State.ERROR);
 				return;
@@ -300,12 +315,14 @@ public class ClusterManager {
 		while (!deployQueue.isEmpty()) {
 			Deployable deployer = deployQueue.remove();
 			// Add deployer into undeploy queue
+			// 将deployer从deployQueue队列中取出，加入undeployQueue队列
 			undeployQueue.add(deployer);
 			logger.info(deployer.getComponentName() + " deployment started.");
 
 			boolean deployStatus = true;
 
 			try {
+				// 为每个组建的deployer调用deploy函数
 				deployStatus = deploy(deployer);
 				if (deployStatus) {
 					clusterConf.getProgress().setProgress(
@@ -331,6 +348,7 @@ public class ClusterManager {
 		}
 
 		// On error undeploy components
+		// 如果出现错误，undeploy所有组件
 		if (clusterConf.getState() == Constant.Cluster.State.ERROR) {
 			while (!undeployQueue.isEmpty()) {
 				undeploy(undeployQueue.remove());
@@ -546,10 +564,12 @@ public class ClusterManager {
 	 */
 	private boolean createQueue(ClusterConfig newClusterConf) {
 		// Create ssh connections
+		// 为新的clusterconf的节点创建ssh链接
 		AnkushUtils.connectNodes(clusterConf, newClusterConf.getNodes()
 				.values());
 
 		// Create queue
+		// 创建部署优先级队列，为何要有优先级？
 		deployQueue = new PriorityQueue<Deployable>(10,
 				new DeployerComparator());
 
@@ -561,6 +581,7 @@ public class ClusterManager {
 		// Add deployer into queue
 		for (String componentName : newClusterConf.getComponents().keySet()) {
 			try {
+				// 获取deployer实例，加入deploy优先级队列
 				deployQueue.add(ObjectFactory.getDeployerObject(componentName));
 			} catch (Exception e) {
 				newClusterConf.addError("configuration", "could not found "
@@ -651,11 +672,13 @@ public class ClusterManager {
 		}
 
 		// Create operation
+		// 构造操作
 		if (!preOperation(clusterConf, Constant.Cluster.Operation.DEPLOY,
 				clusterConf.getComponents().keySet())) {
 			return result();
 		}
 
+		// 获取executor执行deploy函数
 		AppStoreWrapper.getExecutor().execute(new Runnable() {
 			@Override
 			public void run() {
@@ -667,6 +690,7 @@ public class ClusterManager {
 				} finally {
 					// postProcess must be done in every case
 					try {
+						// 执行收尾工作
 						postProcess();
 					} catch (Exception e) {
 						logger.error(e.getMessage(), e);
@@ -926,15 +950,20 @@ public class ClusterManager {
 			Constant.Cluster.Operation operation, Set<String> components) {
 
 		try {
+			// 增加操作id，清除错误记录
 			clusterConf.incrementOperation();
 			// Enable database logs
+			// 根据id情况设置日志模式
 			logger.setCluster(this.clusterConf);
+			// 构造过程对象
 			clusterConf.setProgress(new ProgressConfig(components));
 			// Save operation details
 			DatabaseUtils databaseUtils = new DatabaseUtils();
+			// 记录操作
 			databaseUtils.addClusterOperation(clusterConf, operation,
 					this.loggedInUser);
 			// Add operation input data
+			// 添加操作输入数据
 			databaseUtils.updateOperationData(clusterConf, "input", input);
 			return true;
 		} catch (AnkushException e) {

@@ -168,6 +168,7 @@ public class DBServiceManager {
 	 * @param clusterId
 	 * @param nodeList
 	 */
+	// 根据集群配置保存服务条目
 	public void addClusterServices(ClusterConfig clusterConfig,
 			Collection<NodeConfig> nodeList) {
 		RegisterLevel registrationType;

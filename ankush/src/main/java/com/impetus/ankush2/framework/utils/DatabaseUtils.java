@@ -48,6 +48,7 @@ public class DatabaseUtils {
 		addClusterOperation(clusterConf, operation, clusterConf.getCreatedBy());
 	}
 
+	// 添加一个操作
 	public void addClusterOperation(ClusterConfig clusterConf,
 			Constant.Cluster.Operation operation, String loggedInUser) {
 		Operation dbOperation = new Operation();
@@ -57,19 +58,23 @@ public class DatabaseUtils {
 		dbOperation.setStartedAt(new Date());
 		dbOperation.setStartedBy(loggedInUser);
 		dbOperation.setStatus(Constant.Operation.Status.INPROGRESS.toString());
+		// 保存操作，并更新状态
 		if (new DBOperationManager().saveOperation(dbOperation) != null) {
 			updateOperationProgress(clusterConf);
 		}
 	}
 
 	public void updateClusterOperation(ClusterConfig clusterConf) {
+		// 获取操作信息
 		Operation operation = new DBOperationManager()
 				.getOperation(clusterConf);
 		if (operation == null) {
 			logger.error("Could not find operation.");
 			return;
 		}
+		// 更新操作完成时间
 		operation.setCompletedAt(new Date());
+		// 根据集群状态更新操作状态
 		if (clusterConf.getState() != Constant.Cluster.State.ERROR) {
 			operation.setStatus(Constant.Operation.Status.COMPLETED.toString());
 		} else {
@@ -79,7 +84,9 @@ public class DatabaseUtils {
 						Constant.Operation.Status.ERROR);
 			}
 		}
+		// 更新操作信息
 		updateOperationProgress(clusterConf);
+		// 保存操作信息，貌似不需要，更新操作时已做保存
 		new DBOperationManager().saveOperation(operation);
 	}
 
@@ -89,18 +96,22 @@ public class DatabaseUtils {
 		if (value == null) {
 			return;
 		}
+		// 获取cluster最近的操作，cluster一次只允许一个操作执行
 		Operation operation = new DBOperationManager()
 				.getOperation(clusterConf);
 		if (operation == null) {
 			logger.error("Could not find operation.");
 			return;
 		}
+		// 获取操作数据，从字节数组反序列化得到
 		HashMap<String, Object> opData = operation.getData();
 		if (opData == null) {
 			opData = new HashMap<String, Object>();
 		}
+		// 保存操作状态
 		opData.put(key, value);
 		operation.setData(opData);
+		// 保存操作
 		new DBOperationManager().saveOperation(operation);
 	}
 
@@ -110,12 +121,16 @@ public class DatabaseUtils {
 	}
 
 	// Save cluster details into database.
+	// 保存集群配置入数据库
 	public String saveCluster(ClusterConfig clusterConf) {
 		logger.info("Saving cluster configuration into database.");
 
 		// Create and save new cluster
+		// 获取数据库中保存的cluster信息为cluster实例
 		Cluster cluster = new DBClusterManager().getCluster(clusterConf
 				.getName());
+		// 如果当前数据库中不存在该cluster，创建一个新的cluster实例
+		// 数据库中保存的cluster信息有：名字，创建日期，创建者，告警配置，运行的服务，以及集群id（以创建时的时间毫秒数），集群状态，序列化后的clusterconf以及AgentBuildVersion
 		if (cluster == null) {
 			cluster = new Cluster();
 			cluster.setName(clusterConf.getName());
@@ -130,6 +145,7 @@ public class DatabaseUtils {
 		cluster.setClusterConf(clusterConf);
 		cluster.setAgentVersion(AppStoreWrapper.getAgentBuildVersion());
 		// save to database
+		// 保存集群信息到数据库
 		cluster = new DBClusterManager().saveCluster(cluster);
 		if (cluster == null) {
 			return "Could not save cluster details.";
@@ -142,6 +158,7 @@ public class DatabaseUtils {
 	}
 
 	// update nodes into database
+	// 保存节点信息到数据库
 	public String saveNodes(ClusterConfig clusterConf,
 			Collection<NodeConfig> nodeConfList) {
 		// agent build version
@@ -188,6 +205,7 @@ public class DatabaseUtils {
 		Set<String> errors = new LinkedHashSet<String>();
 
 		// Check for cluster name
+		// 如果isCreated标记为false，检查数据库中是否已存在集群配置
 		if (!isCreated
 				&& new DBClusterManager().getCluster(clusterConf.getName()) != null) {
 			errors.add("Cluster '" + clusterConf.getName()
@@ -196,6 +214,7 @@ public class DatabaseUtils {
 		}
 
 		// Check hosts
+		// 检查主机是否已经在集群中
 		for (String host : newClusterConf.getNodes().keySet()) {
 			Node node = new DBNodeManager().getNode(host);
 			// continue if node does not exist

@@ -79,6 +79,7 @@ public class ClusterConfig implements Configuration {
 				+ errors + "]";
 	}
 
+	// 获取操作id，清楚错误记录
 	public void incrementOperation() throws AnkushException {
 		if (allowNewOperation()) {
 			if (operationId == null || operationId < 1) {
@@ -91,8 +92,10 @@ public class ClusterConfig implements Configuration {
 		}
 	}
 
+	// 判断是否允许新的操作进行
 	private boolean allowNewOperation() throws AnkushException {
 		try {
+			// 获取正在进行中的操作，如果目前有正在进行的操作则不能执行新的操作
 			List<Operation> operations = new DBOperationManager()
 					.getOperations(this.clusterId, null, null,
 							Constant.Operation.Status.INPROGRESS.toString());
@@ -115,6 +118,7 @@ public class ClusterConfig implements Configuration {
 		}
 	}
 
+	// 清除节点的错误表，集群的错误表
 	private void resetErrorObjects() {
 		for (NodeConfig nodeConfig : this.nodes.values()) {
 			nodeConfig.setErrors(new LinkedHashMap<String, Set<String>>());

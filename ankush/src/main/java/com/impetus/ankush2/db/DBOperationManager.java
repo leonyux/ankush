@@ -52,6 +52,7 @@ public class DBOperationManager {
 		return null;
 	}
 
+	// 获取最近的操作
 	public Operation getOperation(ClusterConfig clusterConf) {
 		// property map for query.
 		Map<String, Object> propMap = new HashMap<String, Object>();
@@ -132,6 +133,7 @@ public class DBOperationManager {
 		return new ArrayList<Operation>();
 	}
 
+	// 获取操作id
 	public long getNewOperationId(long clusterId) {
 		try {
 			String queryString = "select max(operationId) from Operation where clusterId="

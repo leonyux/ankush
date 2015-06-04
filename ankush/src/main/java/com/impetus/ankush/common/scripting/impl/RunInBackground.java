@@ -63,6 +63,7 @@ public class RunInBackground extends AnkushTask {
 	 * @see net.neoremind.sshxcute.task.CustomTask#getCommand()
 	 */
 	@Override
+	// 后台运行，将标准错误与标准输出重定向到nohup.out
 	public String getCommand() {
 		if (this.filePath != null) {
 			return command + " </dev/null >" + filePath + " 2>&1 &";

@@ -278,6 +278,7 @@ public class JmxMonitoringUtil {
 	 *            the action
 	 * @return the jmx trans command
 	 */
+	// 从配置中获取相应的启动命令，为何需要中转一道？
 	public static String getJmxTransCommand(String scriptFilePath,
 			String password, Constant.JmxTransServiceAction action) {
 

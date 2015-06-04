@@ -141,6 +141,7 @@ public class AnkushUtils {
 		return true;
 	}
 
+	// 利用ssh连接节点，根据集群配置的用户名密码或者私钥
 	public static void connectNodes(ClusterConfig clusterConfig,
 			Collection<NodeConfig> nodeConfList) {
 		for (NodeConfig nodeConf : nodeConfList) {
