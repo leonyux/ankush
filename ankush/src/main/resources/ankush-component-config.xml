@@ -78,6 +78,16 @@
 		<monitor>com.impetus.ankush2.zookeeper.ZookeeperMonitor</monitor>
 		<service>com.impetus.ankush2.zookeeper.ZookeeperServiceMonitor</service>
 	</component>
+
+	<component id="Kafka">
+		<name>kafka</name>
+		<version>0.8.2.1</version>
+		<vendor>apache</vendor>
+		<priority>7</priority>
+		<deployer>com.impetus.ankush2.kafka.KafkaDeployer</deployer>
+		<monitor>com.impetus.ankush2.kafka.KafkaMonitor</monitor>
+		<service>com.impetus.ankush2.kafka.KafkaServiceMonitor</service>
+	</component>
 	
 
 </components>

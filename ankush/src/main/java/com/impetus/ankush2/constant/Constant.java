@@ -178,6 +178,9 @@ public interface Constant {
 			/** The zookeeper. */
 			String ZOOKEEPER = "Zookeeper";
 
+			/** The kafka */
+			String KAFKA = "Kafka";
+
 			/** The ganglia. */
 			String GANGLIA = "Ganglia";
 

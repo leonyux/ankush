@@ -575,9 +575,9 @@ public class ClusterManager {
 
 		undeployQueue = new PriorityQueue<Deployable>(10,
 				new DeployerComparator(true));
-		deployQueue.add(new PreprocessorDeployer());
-		deployQueue.add(new PostProcessorDeployer());
-		deployQueue.add(new DependencyDeployer());
+		deployQueue.add(new PreprocessorDeployer()); // 安装Jdk
+		deployQueue.add(new PostProcessorDeployer()); // 重启agent
+		deployQueue.add(new DependencyDeployer()); // 比如hadoop ha需要依赖的部署
 		// Add deployer into queue
 		for (String componentName : newClusterConf.getComponents().keySet()) {
 			try {

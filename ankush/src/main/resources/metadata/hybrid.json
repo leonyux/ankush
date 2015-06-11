@@ -282,14 +282,8 @@
     },
     "Vendors": {
       "Apache": {
-        "3.4.6": {
-          "url": "http://archive.apache.org/dist/zookeeper/zookeeper-3.4.6/zookeeper-3.4.6.tar.gz"
-        },
-        "3.4.5": {
-          "url": "http://archive.apache.org/dist/zookeeper/zookeeper-3.4.5/zookeeper-3.4.5.tar.gz"
-        },
-        "3.3.5": {
-          "url": "http://archive.apache.org/dist/zookeeper/zookeeper-3.3.5/zookeeper-3.3.5.tar.gz"
+        "0.8.2.1": {
+          "url": "http://mirrors.hust.edu.cn/apache/kafka/0.8.2.1/kafka_2.10-0.8.2.1.tgz"
         }
       }
     }
