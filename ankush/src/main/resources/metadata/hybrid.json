@@ -262,5 +262,36 @@
         }
       }
     }
+  },
+
+  "Kafka": {
+    "Defaults": {
+      "installationHomePath": "/home/${user}/kafka/",
+      "clientPort": 2181,
+      "dataDir": "/home/${user}/zookeeper/zk_data_dir/",
+      "syncLimit": 2,
+      "initLimit": 5,
+      "tickTime": 2000,
+      "jmxPort": 12345,
+      "confState": "Default",
+      "RegisterLevel": {
+        "LEVEL1": "",
+        "LEVEL2": "",
+        "LEVEL3": ""
+      }
+    },
+    "Vendors": {
+      "Apache": {
+        "3.4.6": {
+          "url": "http://archive.apache.org/dist/zookeeper/zookeeper-3.4.6/zookeeper-3.4.6.tar.gz"
+        },
+        "3.4.5": {
+          "url": "http://archive.apache.org/dist/zookeeper/zookeeper-3.4.5/zookeeper-3.4.5.tar.gz"
+        },
+        "3.3.5": {
+          "url": "http://archive.apache.org/dist/zookeeper/zookeeper-3.3.5/zookeeper-3.3.5.tar.gz"
+        }
+      }
+    }
   }
 }
