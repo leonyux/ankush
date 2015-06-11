@@ -47,6 +47,7 @@ import com.impetus.ankush2.utils.AnkushUtils;
  * 
  * @author Akhil
  */
+// 基础的抽象Hadoop配置器，被Hadoop1和Hadoop2的配置器继承
 public abstract class HadoopConfigurator extends ComponentConfigContext {
 
 	/**
@@ -100,6 +101,7 @@ public abstract class HadoopConfigurator extends ComponentConfigContext {
 	public abstract String getAgentProperties(NodeConfig nodeConfig)
 			throws AnkushException;
 
+	// 为节点生成rsa密钥
 	public boolean generateRsaKeysForHadoopNodes(Set<String> nodes) {
 		try {
 			for (String host : nodes) {
@@ -197,6 +199,7 @@ public abstract class HadoopConfigurator extends ComponentConfigContext {
 	 *            the node config
 	 * @return true, if successful
 	 */
+	// 配置slaves文件
 	public boolean configureSlavesFile(NodeConfig nodeConfig, Set<String> slaves) {
 		// configuring slaves file
 		Result res = null;

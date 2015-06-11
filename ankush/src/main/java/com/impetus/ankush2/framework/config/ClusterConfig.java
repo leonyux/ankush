@@ -79,7 +79,7 @@ public class ClusterConfig implements Configuration {
 				+ errors + "]";
 	}
 
-	// 获取操作id，清楚错误记录
+	// 获取操作id，清除错误记录,如果目前正有operation则不修改opid
 	public void incrementOperation() throws AnkushException {
 		if (allowNewOperation()) {
 			if (operationId == null || operationId < 1) {

@@ -76,6 +76,7 @@ public class HadoopDeployer extends AbstractDeployer {
 	 *            the cluster config
 	 * @return true, if successful
 	 */
+	// 初始化成员数据,主要为clusterConfig, compConfig和hadoopAdvanceConf
 	private boolean intitializeDataMembers(ClusterConfig clusterConfig) {
 		this.clusterConfig = clusterConfig;
 		this.LOG.setCluster(clusterConfig);
@@ -431,14 +432,17 @@ public class HadoopDeployer extends AbstractDeployer {
 	 * .config.ClusterConfig)
 	 */
 	@Override
+	// 部署hadoop节点
 	public boolean deploy(ClusterConfig conf) {
 		try {
+			// 初始化对象的成员变量,主要为clusterConfig, compConfig和hadoopAdvanceConfig
 			if (!intitializeDataMembers(conf)) {
 				return false;
 			}
 			LOG.setCluster(conf);
 			LOG.info("Deploying Hadoop", Constant.Component.Name.HADOOP);
 
+			// 获取hadoopConfigurator实例
 			HadoopConfigurator hadoopConfigurator = HadoopUtils
 					.getConfiguratorInstance(clusterConfig, compConfig);
 

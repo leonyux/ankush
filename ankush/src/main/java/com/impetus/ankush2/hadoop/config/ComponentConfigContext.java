@@ -31,6 +31,7 @@ import com.impetus.ankush2.logger.AnkushLogger;
  * @author Akhil
  *
  */
+// 组件配置上下文，clusterConfig和compConfig
 public class ComponentConfigContext {
 	
 	public ComponentConfigContext() {

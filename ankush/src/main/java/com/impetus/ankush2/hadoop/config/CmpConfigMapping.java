@@ -30,6 +30,7 @@ import java.util.Map;
  * @author Akhil
  *
  */
+// 主要保存安装类型、版本、发行商、以及classMap四个信息
 public class CmpConfigMapping {
 	
 	/* (non-Javadoc)

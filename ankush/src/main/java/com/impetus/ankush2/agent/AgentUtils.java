@@ -129,6 +129,7 @@ public class AgentUtils {
 
 	public static int nodeCountForAgentUpgrade(Cluster cluster) {
 		int nodeCount = 0;
+		// 如果集群状态不是下述异常状态之一
 		if (!(cluster.getState().equals(
 				Constant.Cluster.State.SERVER_CRASHED.toString())
 				|| cluster.getState().equals(
@@ -137,11 +138,14 @@ public class AgentUtils {
 						Constant.Cluster.State.REMOVING.toString()) || cluster
 				.getState().equals(Constant.Cluster.State.DEPLOYING.toString()))) {
 
+			// 获取集群的agent版本
 			String clusterAgentVersion = cluster.getAgentVersion();
 			// Set of nodes
 			Set<Node> nodes = cluster.getNodes();
 
 			// iterating over the nodes.
+			// 比较agent的版本是否和cluster agent版本一致,如果一致,数量增加
+			// 为什么会不一致?集群重叠部署?
 			for (Node node : nodes) {
 				// node agent version
 				String nodeAgentVersion = node.getAgentVersion();

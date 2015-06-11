@@ -78,8 +78,10 @@ public class AgentUpgrader {
 	/**
 	 * Update agent implementation.
 	 */
+	// 更新agent
 	public void upgradeAgent() {
 		// getting a list of clusters that are in deployed state
+		// 获取状态为deployed和maintaince的集群信息
 		List<Cluster> clusters = clusterManager
 				.getAllByPropertyValue(Constant.Keys.STATE,
 						Constant.Cluster.State.DEPLOYED.toString());
@@ -95,37 +97,47 @@ public class AgentUpgrader {
 			try {
 				// if cluster agent version and agent cluster version is
 				// different
+				// 比较集群的agent版本是否和目前server端的一致,并且集群中有节点需要升级
 				if (!(agentBuildVersion.equals(cluster.getAgentVersion()))
 						|| ((AgentUtils.nodeCountForAgentUpgrade(cluster) > 0))) {
 
 					// Cluster configuration Object
+					// 获取集群的clusterconfig数据
 					ClusterConfig clusterConfig = cluster.getClusterConfig();
 					if (clusterConfig == null) {
 						throw new AnkushException(
 								"Could not get cluster configuration.");
 					}
 					// Incrementing operation id
+					// 增加操作id
 					clusterConfig.incrementOperation();
 					// setting cluster config to save logs in database
 					LOGGER.setCluster(clusterConfig);
 					// log message.
+					// 记录日志信息
 					LOGGER.info(MESSAGE_UPGRADING_AGENT);
 					// Setting cluster state to maintenence
+					// 将集群状态设置为mantainacne
 					cluster.setState(Constant.Cluster.State.MAINTENANCE
 							.toString());
+					// 保存增加过opid后的clusterconfig
 					cluster.setClusterConf(clusterConfig);
+					// 保存cluster至数据库
 					clusterManager.save(cluster);
 
 					// cluster nodes.
 					Set<Node> nodes = cluster.getNodes();
 					if (nodes == null) {
+						// 如果不能获取到cluster中的节点,将集群状态改回为deployed
 						cluster.setState(Constant.Cluster.State.DEPLOYED
 								.toString());
+						// 保存到数据库,抛出异常
 						clusterManager.save(cluster);
 						throw new AnkushException(
 								"Could not get Cluster nodes.");
 					}
 					// iterate over the nodes to upgrade.
+					// 为每个节点执行更新操作
 					for (Node node : nodes) {
 						new AgentNodeUpgrader(node, clusterConfig)
 								.upgradeAgent();

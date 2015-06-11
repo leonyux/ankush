@@ -386,6 +386,7 @@ public class Hadoop2Configurator extends HadoopConfigurator {
 		}
 	}
 
+	// 为节点配置Hadoop相关环境变量
 	private boolean configureLinuxEnvironmentFile(NodeConfig nodeConfig) {
 		Result res = null;
 		LOG.info("Configuring variables in " + Constant.LinuxEnvFiles.BASHRC

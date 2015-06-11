@@ -37,6 +37,7 @@ import com.impetus.ankush2.hadoop.utils.HadoopUtils;
  *
  * @author Akhil
  */
+// Hadoop2 应用信息
 public class Hadoop2Application implements Serializable {
 	
 	/**

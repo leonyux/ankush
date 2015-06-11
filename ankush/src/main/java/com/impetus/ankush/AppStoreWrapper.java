@@ -226,22 +226,27 @@ public class AppStoreWrapper {
 		String userHome = System.getProperty("user.home");
 		if (ankushConfReader != null) {
 			/* setting serverMetadataPath */
+			// 设置运行时server目录
 			AppStore.setObject(KEY_SERVER,
 					userHome + ankushConfReader.getStringValue(KEY_SERVER));
 
+			// 设置server log目录
 			AppStore.setObject(
 					KEY_SERVER_LOGS_DIR,
 					userHome
 							+ ankushConfReader
 									.getStringValue(KEY_SERVER_LOGS_DIR));
 			/* setting serverRepoPath */
+			// 设置server repo存放路径
 			AppStore.setObject(KEY_REPO,
 					userHome + ankushConfReader.getStringValue(KEY_REPO));
 			/* setting serverPatchesPath */
+			// 设置server patches存放路径
 			AppStore.setObject(KEY_PATCHES,
 					userHome + ankushConfReader.getStringValue(KEY_PATCHES));
 			
 			// Setting initial delay value for agent down check.
+			// 设置agent初始存活检查延迟时间,以及检查间隔
 			AppStore.setObject(
 					com.impetus.ankush2.constant.Constant.Keys.KEY_INITIAL_DELAY_AGENT_CHECK,
 					ankushConfReader
@@ -500,14 +505,17 @@ public class AppStoreWrapper {
 		AppStore.setObject(fileName, appender);
 	}
 
+	// 设置组件配置
 	public static void setComponentConfiguration() {
 		log.debug("setComponentConfiguration()");
 
 		try {
 			// getting configuration file
+			// 获取组件配置文件
 			Resource resource = new ClassPathResource(COMPONENT_CONF_FILE);
 			String filePath = resource.getFile().getAbsolutePath();
 
+			// 组件配置的几个配置项
 			List<String> subItems = new ArrayList<String>();
 			subItems.add(Constant.AppStore.ComponentConf.Key.NAME);
 			subItems.add(Constant.AppStore.ComponentConf.Key.PRIORITY);
@@ -515,11 +523,13 @@ public class AppStoreWrapper {
 			subItems.add(Constant.AppStore.ComponentConf.Key.MONITOR);
 			subItems.add(Constant.AppStore.ComponentConf.Key.SERVICE);
 
+			// 获取各组件的配置信息
 			Map items = XmlUtil
 					.loadConfigXMLParameters(
 							filePath,
 							Constant.AppStore.ComponentConf.Key.COMPONENT,
 							subItems);
+			// 将组件配置保存到appstore
 			AppStore.setObject(
 					Constant.AppStore.COMPONENT_MAP,
 					items);
@@ -540,6 +550,8 @@ public class AppStoreWrapper {
 	 */
 	public static void setCompConfigClasses() {
 
+		// ankush_constants.xml文件中config.classes.supported.components属性标示
+		// 目前支持configXmlMapping的只有hadoop组件,相应的配置文件为ankush-hadoop-config.xml
 		List<String> componentList = Arrays
 				.asList(AppStoreWrapper
 						.getAnkushConfReader()
@@ -557,10 +569,12 @@ public class AppStoreWrapper {
 			subItems.add(HadoopConstants.ConfigXmlKeys.ClassType.COMMANDS_MANAGER);
 			subItems.add(HadoopConstants.ConfigXmlKeys.ClassType.MONITOR);
 
+			// 获取支持xmlconfigmapping组件的xml配置文件路径
 			String filePath = AppStoreWrapper.getConfigClassNameFile(component);
 			CmpConfigMappingSet cmpConfigXmlSet = null;
 			if (filePath != null) {
 				try {
+					// 读取配置,实际上是一些类的完全限定名,对应不同的发行版和版本以及安装方式
 					cmpConfigXmlSet = AppStoreWrapper.loadConfigXmlParameters(
 							filePath, HadoopConstants.ConfigXmlKeys.CLASS,
 							subItems);
@@ -573,6 +587,7 @@ public class AppStoreWrapper {
 				}
 			}
 		}
+		// 将获取到的cmpConfigMapping放入到appstore
 		AppStore.setObject(
 				Constant.AppStore.CompConfigXmlMapping.KEY_APP_STORE_OBJECT,
 				cmpConfigMapping);
@@ -684,6 +699,7 @@ public class AppStoreWrapper {
 	 *            the type
 	 * @return the app config
 	 */
+	// 获取支持xmlconfigmapping组件的xml配置文件路径
 	public static String getConfigClassNameFile(String type) {
 		// getting configuration file
 		Resource resource = new ClassPathResource("/ankush-" + type

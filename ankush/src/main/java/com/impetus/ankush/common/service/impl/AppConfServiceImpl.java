@@ -487,34 +487,42 @@ public class AppConfServiceImpl implements AppConfService {
 	public void setDefaultHostAddress() {
 		try {
 			// fetching existing appconf object if exists.
+			// 从数据库appconf表中获取serverip配置
 			AppConf appConf = appConfManager.getByPropertyValueGuarded(
 					KEY_CONFKEY, KEY_SERVERIP);
 
 			// Server port.
+			// 获取环境变量中配置的ANKUSH_SERVER_PORT
 			String port = System.getenv("ANKUSH_SERVER_PORT");
 
 			// port is not available in environment variable.
+			// 如果环境变量中没有,设置为默认设置8080
 			if (port == null) {
 				port = DEFAULT_SERVER_PORT;
 			}
 
 			// if not exists.
+			// 如果数据库中appconf中serverip条目不存在
 			if (appConf == null) {
 				// Fetching the host ip address.
+				// 通过域名解析获取本地主机名对应的ip
 				InetAddress addr = InetAddress.getLocalHost();
 
 				// creating a hash map object.
+				// 构造hashmap对象
 				HashMap map = new HashMap();
 				map.put(com.impetus.ankush2.constant.Constant.Keys.PUBLICIP,
 						addr.getHostAddress());
 				map.put(com.impetus.ankush2.constant.Constant.Keys.PORT, port);
 
 				// setting key and value in app conf.
+				// 用刚才的信息构造appConf对象
 				appConf = new AppConf();
 				appConf.setConfKey(KEY_SERVERIP);
 				appConf.setObject(map);
 
 				// saving app conf object.
+				// 保存appConf对象至appconf表中
 				appConfManager.save(appConf);
 			}
 		} catch (Exception e) {

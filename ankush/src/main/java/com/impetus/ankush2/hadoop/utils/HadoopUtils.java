@@ -348,6 +348,7 @@ public class HadoopUtils {
 	 *            the cluster config
 	 * @return the hadoop config
 	 */
+	// 从clusterConfig中取出hadoopCompConfig
 	public static ComponentConfig getHadoopConfig(ClusterConfig clusterConfig) {
 		ComponentConfig hadoopConfig = clusterConfig.getComponents().get(
 				Constant.Component.Name.HADOOP);
@@ -1502,6 +1503,7 @@ public class HadoopUtils {
 	 * @throws ClassNotFoundException
 	 *             the class not found exception
 	 */
+	// 获取hadoopConfigurator实例
 	public static HadoopConfigurator getConfiguratorInstance(
 			ClusterConfig clusterConfig, ComponentConfig compConfig)
 			throws ClassNotFoundException {
@@ -1545,9 +1547,11 @@ public class HadoopUtils {
 			ComponentConfig compConfig, String classType)
 			throws ClassNotFoundException {
 
+		// 获取hadoop的cmpconfigMappingSet
 		CmpConfigMappingSet configXmlSet = AppStoreWrapper
 				.getCmpConfigMapping(Constant.Component.Name.HADOOP);
 
+		// 获取相应类型的类名
 		String className = configXmlSet.get(compConfig, false).getClassName(
 				classType);
 		ComponentConfigContext hadoopContextObject = (ComponentConfigContext) ReflectionUtil

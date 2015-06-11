@@ -141,6 +141,7 @@ public class UserManagerImpl extends GenericManagerImpl<User, Long> implements
 	 * {@inheritDoc}
 	 */
 	@Override
+	// 保存用户,如果有密码编码且被修改,则编码密码并保存
 	public User saveUser(User user) throws UserExistsException {
 
 		// lowercase userId
@@ -510,10 +511,12 @@ public class UserManagerImpl extends GenericManagerImpl<User, Long> implements
 	}
 
 	@Override
+	// 添加管理员帐号,如果之前没有帐号则添加管理员帐号
 	public void addAdminUser() {
 		List<User> users = getUsers();
 		if (users == null || users.isEmpty()) {
 			try {
+				// 新建一个角色
 				Role role = new Role();
 				role.setName("ROLE_SUPER_USER");
 				role = roleManager.save(role);
@@ -521,6 +524,7 @@ public class UserManagerImpl extends GenericManagerImpl<User, Long> implements
 				Set<Role> roles = new HashSet<Role>();
 				roles.add(role);
 
+				// 新建一个用户,加入roles中的角色
 				User user = new User();
 				user.setEnabled(true);
 				user.setId(null);

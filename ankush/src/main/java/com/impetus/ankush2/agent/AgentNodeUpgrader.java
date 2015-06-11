@@ -97,6 +97,7 @@ public class AgentNodeUpgrader extends AgentUpgrader {
 			}
 
 			// connecting to node.
+			// 获取该节点的ssh连接
 			connection = SSHUtils.connectToNode(host,
 					clusterConfig.getAuthConf());
 			if (connection == null) {
@@ -114,6 +115,7 @@ public class AgentNodeUpgrader extends AgentUpgrader {
 			// creating upgrade script directory
 			LOGGER.info("Creating Agent upgrade directory.",
 					Constant.Component.Name.AGENT, host);
+			//
 			String upgradeScriptDirectory = AgentUpgrader.NODE_ANKUSH_HOME
 					+ "upgrade/";
 			// creating Agent upgrade directory
@@ -128,6 +130,7 @@ public class AgentNodeUpgrader extends AgentUpgrader {
 			// Uploading the agent jar to node
 			LOGGER.info("Copying Agent bundle...",
 					Constant.Component.Name.AGENT, host);
+			// 上传agent.tar.gz包至目标路径
 			uploadBundle(connection, AppStoreWrapper.getResourcePath()
 					+ RESOURCE_BUNDLE_PATH, NODE_ANKUSH_HOME);
 
@@ -135,6 +138,7 @@ public class AgentNodeUpgrader extends AgentUpgrader {
 			extractNewAgent(connection);
 
 			// uploading upgrade.sh to node
+			// 将升级脚本上传到upgrade目录下
 			String updateScriptPath = AppStoreWrapper.getResourcePath()
 					+ UPGRADE_SCRIPT_PATH;
 			// node update script path.
@@ -154,10 +158,13 @@ public class AgentNodeUpgrader extends AgentUpgrader {
 			// TODO: Component wise upgrade changes
 
 			// Removing upgrade and backup directory after successful upgrade
+			// 成功升级后,移除upgrade目录和备份目录
 			removeUpgradeAndBackupDir(connection, upgradeScriptDirectory);
 
 			// starting Agent
+			// 启动agent
 			startAgent(connection);
+			// 更新node以及nodeconfig状态
 			node.setAgentVersion(agentBuildVersion);
 			nodeConfig.setStatus(true);
 
@@ -169,11 +176,13 @@ public class AgentNodeUpgrader extends AgentUpgrader {
 			}
 		} finally {
 			// disconnecting node
+			// 最后关闭该节点的连接
 			if (connection != null) {
 				connection.disconnect();
 			}
 		}
 		// saving node with status true/false in nodeConfig object
+		// 保存更新的节点信息到数据库node表
 		node.setNodeConfig(nodeConfig);
 		nodeManager.save(node);
 	}
@@ -186,12 +195,15 @@ public class AgentNodeUpgrader extends AgentUpgrader {
 		String errMsg = "Could not take Agent Backup.";
 		try {
 			// Stopping Ankush Agent
+			// 执行agent停止脚本
 			CustomTask killProcess = new ExecCommand("sh "
 					+ clusterConfig.getAgentHomeDir()
 					+ AgentConstant.Relative_Path.STOP_SCRIPT);
+			// 不检查是否成功?
 			connection.exec(killProcess);
 
 			// backup old existing agent folder.
+			// 备份目前的agent目录
 			Copy backUpAgent = new Copy(clusterConfig.getAgentHomeDir(),
 					AGENT_BACKUP_FOLDER, true);
 			if (connection.exec(backUpAgent).rc != 0) {
@@ -229,12 +241,14 @@ public class AgentNodeUpgrader extends AgentUpgrader {
 
 	private void extractNewAgent(SSHExec connection) throws AnkushException {
 		try {
+			// 创建新目录存放解压后的agent
 			AnkushTask ankushTask = new MakeDirectory(NEW_AGENT_FOLDER);
 			if (connection.exec(ankushTask).rc != 0) {
 				throw new AnkushException(
 						"Could not create directory for new agent bundle.");
 			}
 
+			// 将agent解压到NEW_AGENT_FOLDER目录下
 			ankushTask = new Untar(NEW_AGENT_TAR, NEW_AGENT_FOLDER, false);
 			if (connection.exec(ankushTask).rc != 0) {
 				throw new AnkushException("Could not extract agent bundle.");
@@ -245,6 +259,7 @@ public class AgentNodeUpgrader extends AgentUpgrader {
 		}
 	}
 
+	// 执行升级脚本
 	private boolean executeUpgradeScript(SSHExec connection,
 			String upgradeScriptDirectory) {
 		String componentName = Constant.Component.Name.AGENT;
@@ -264,6 +279,7 @@ public class AgentNodeUpgrader extends AgentUpgrader {
 				List<String> upgradeCommands = FileUtils.readLines(new File(
 						updateScriptPath));
 				// Iterating over the commands.
+				// 一条指令一条指令执行,并没有采用之前上传的脚本文件
 				for (String command : upgradeCommands) {
 					// executing script.
 					if (connection.exec(new ExecCommand(command)).rc != 0) {
@@ -288,6 +304,7 @@ public class AgentNodeUpgrader extends AgentUpgrader {
 		return false;
 	}
 
+	// 回滚操作,还原文件,并没有重启agent
 	private void rollBack(SSHExec connection) {
 		try {
 			// Removing Agent upgrade directory, agent.zip, .newAgent folder and
@@ -315,6 +332,7 @@ public class AgentNodeUpgrader extends AgentUpgrader {
 		}
 	}
 
+	// 删除upgrade目录和agent备份目录
 	private void removeUpgradeAndBackupDir(SSHExec connection,
 			String upgradeScriptDirectory) {
 		LOGGER.info("Removing agent upgrade script folder...",
@@ -340,6 +358,7 @@ public class AgentNodeUpgrader extends AgentUpgrader {
 		String startAgent = "sh " + clusterConfig.getAgentHomeDir()
 				+ AgentConstant.Relative_Path.START_SCRIPT;
 		// create task
+		// 调用启动脚本
 		CustomTask task = new ExecCommand(startAgent);
 		try {
 			if (connection.exec(task).rc != 0) {

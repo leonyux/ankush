@@ -382,6 +382,7 @@ public class AnkushLogger {
 	 */
 	public void info(String message, String componentName, String host) {
 		logger.info(processMessage(message, host));
+		// 数据库中保存日志
 		dbMessage(message, componentName, host, LogLevel.INFO);
 	}
 

@@ -32,6 +32,7 @@ import com.impetus.ankush2.hadoop.utils.HadoopConstants;
  * @author Akhil
  * 
  */
+// CmpConfigMapping的集合
 public class CmpConfigMappingSet extends HashSet<CmpConfigMapping> {
 
 	private CmpConfigMapping get(String installationType, String vendor,
